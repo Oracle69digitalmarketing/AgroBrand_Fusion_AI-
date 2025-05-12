@@ -1,7 +1,7 @@
 # --------------------------------------------------------------------------
-# AgroBrand Fusion AI - Phase 2: UI/UX - Prominent Vision AI Results
+# AgroBrand Fusion AI - Phase 2: UI/UX - Welcome Expander
 # Focus: AI Assistant for Agribusiness
-# Enhancements: Clearer display of Vision AI product & confidence
+# Enhancements: Added instructional expander
 # Origin Context: Akure, Ondo State, Nigeria
 # Date: May 12, 2025
 # --------------------------------------------------------------------------
@@ -25,7 +25,7 @@ from fpdf import FPDF
 from google.cloud import vision
 from google.oauth2 import service_account
 
-# --- Credentials Setup Reminder & Product Map (Keep as before) ---
+# --- Credentials Setup Reminder & Product Map ---
 PRODUCT_NAME_SYNONYM_MAP = {
     "bell pepper": "Pepper, Bell", "tomato": "Tomatoes", "tomatoes": "Tomatoes",
     "catfish": "Fish, Catfish (fresh)", "yam tuber": "Yam", "yam": "Yam",
@@ -36,9 +36,9 @@ PRODUCT_NAME_SYNONYM_MAP = {
     "rice": "Rice (local sold loose / imported)"
 }
 
-# --- Helper Functions (All helper functions remain as defined in the previous full script) ---
+# --- Helper Functions (All definitions as provided in previous full script) ---
 def identify_product_via_web(image_bytes):
-    # (Function definition as previously provided - handles credentials, API call, parsing)
+    # (Full function definition from previous steps)
     credentials = None; client = None
     try: creds_json_str = st.secrets["google_cloud_credentials_json"]; creds_info = json.loads(creds_json_str); credentials = service_account.Credentials.from_service_account_info(creds_info)
     except KeyError:
@@ -69,7 +69,7 @@ def identify_product_via_web(image_bytes):
 
 @st.cache_data
 def load_world_bank_data(file_path="WB_Nigeria_Food_Prices.csv"):
-    # (Function definition as previously provided - loads and preprocesses CSV)
+    # (Full function definition from previous steps)
     try:
         df_wb = pd.read_csv(file_path)
         st.success(f"Successfully loaded World Bank data from '{file_path}'")
@@ -93,7 +93,7 @@ def load_world_bank_data(file_path="WB_Nigeria_Food_Prices.csv"):
     except Exception as e: st.error(f"Error loading/processing WB data: {e}"); return None
 
 def fetch_market_price(product_name_from_vision):
-    # (Function definition with IMPROVED MARKET FALLBACK TRANSPARENCY, as provided previously)
+    # (Full function definition with fallback transparency from previous steps)
     st.info(f"Looking up '{product_name_from_vision}' (from Vision AI) in World Bank data...")
     df_world_bank = load_world_bank_data()
     if df_world_bank is None or df_world_bank.empty: st.warning("WB price data unavailable."); return {"price": "N/A", "unit": "", "location": "WB Data Unavailable", "date": "N/A", "trend": ""}
@@ -145,7 +145,7 @@ def fetch_market_price(product_name_from_vision):
     except Exception as e: st.error(f"Error during price lookup for '{product_name_from_vision}': {e}"); return {"price": "Error", "unit": "", "location": "Lookup Failed", "date": "N/A", "trend": ""}
 
 def generate_campaign_content(product_info, market_data):
-    # (Function definition as previously provided)
+    # (Full function definition as previously provided)
     headline = "Quality Farm Products Available!"
     body = "Get the best farm-fresh products today."; cta = "Contact us now to order! [Your Phone Number/WhatsApp]"; hashtags = "#FarmFresh #NigeriaAgro #SupportLocalFarmers"
     if product_info and product_info.get('product'): product_name = product_info.get('product'); condition = product_info.get('condition', 'Quality'); headline = f"Premium {condition} {product_name} - Available Now!";
@@ -162,7 +162,7 @@ def generate_campaign_content(product_info, market_data):
     return {"headline": headline, "body": body, "cta": cta, "hashtags": hashtags}
 
 def generate_campaign_pdf(product_info, market_data, campaign_copy_dict, image=None):
-    # (Function definition as previously provided)
+    # (Full function definition as previously provided)
     pdf = FPDF(); pdf.add_page(); pdf.set_font("Arial", 'B', 16); pdf.cell(0, 10, "AgroBrand AI Campaign Suggestion", ln=True, align='C'); pdf.ln(5);
     pdf.set_font("Arial", size=10); current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S"); pdf.cell(0, 5, f"Generated on: {current_date} WAT", ln=True, align='R'); pdf.ln(5);
     pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "Product & Market Information:", ln=True); pdf.set_font("Arial", size=11); pdf.multi_cell(0, 5, f"- Product: {product_info.get('product', 'N/A')} ({product_info.get('confidence', 0)*100:.1f}%)"); pdf.multi_cell(0, 5, f"- Condition: {product_info.get('condition', 'N/A')}"); pdf.multi_cell(0, 5, f"- Price ({market_data.get('location', 'N/A')}): {market_data.get('price', 'N/A')}"); pdf.multi_cell(0, 5, f"- Unit: {market_data.get('unit', 'N/A')}"); pdf.multi_cell(0, 5, f"- Data Date: {market_data.get('date', 'N/A')}"); pdf.multi_cell(0, 5, f"- Market Trend/Source: {market_data.get('trend', 'N/A')}"); pdf.ln(5);
@@ -186,12 +186,59 @@ for i, key in enumerate(uploader_keys):
     if key not in st.session_state: st.session_state[key] = f"{key}_{i}"
 
 # --- 1. Page Configuration ---
-st.set_page_config(page_title="AgroBrand Fusion AI", layout="wide")
+st.set_page_config(page_title="AgroBrand Fusion AI", layout="wide", initial_sidebar_state="expanded")
 
 # --- 2. Main Application Interface ---
 st.title("🌾 AgroBrand Fusion AI")
 st.markdown("Your AI Assistant for Agribusiness Marketing & Pricing Insights across Nigeria and beyond.")
 st.markdown("*(Image Rec: Google Vision AI | Market Prices: World Bank Monthly Data)*")
+
+# --- ADDED: Welcome Message / Instructions Expander ---
+with st.expander("ℹ️ Welcome & How to Use This App", expanded=False): # Set expanded=True for testing, False for default
+    st.markdown("""
+    ### Welcome to AgroBrand Fusion AI! 👋
+
+    Your AI-powered assistant for boosting your agribusiness marketing and pricing strategies here in Nigeria.
+
+    **Here's how to get started:**
+
+    1.  **📤 Upload Your Assets:**
+        * Use the **sidebar on the left** to upload:
+            * A clear **Product Image** (e.g., your catfish, yams, plantains).
+            * Optionally, your **Sales/Cost Sheet** (CSV or Excel format) for data-driven insights.
+
+    2.  **📂 View Previews:**
+        * Navigate to the **"📂 Asset Previews"** tab to check if your files have loaded correctly.
+
+    3.  **📊 Get AI Analysis & Insights:**
+        * In the **"📊 AI Analysis"** tab:
+            * Our AI (Google Vision) will attempt to identify your product from the image.
+            * We'll then fetch estimated market prices using World Bank monthly data. (Note: This data is updated monthly, so it reflects recent trends rather than daily prices).
+            * If you uploaded a sales sheet, see highlights like top products by revenue.
+
+    4.  **📝 Generate, Edit & Export Campaign Content:**
+        * Head over to the **"📝 Campaign Content"** tab.
+        * Review the AI-suggested marketing copy (headlines, body text, CTAs, hashtags).
+        * **Click into any text area to edit the suggestions** to perfectly match your brand and message!
+        * Download your finalized content as a `.txt` file or a more detailed `.pdf` report (which can include your product image).
+
+    5.  **🔄 Start Over:**
+        * Use the **"Reset All / Start Over"** button in the sidebar at any time to clear all uploads and results.
+
+    **Tips for Best Results:**
+    * Use clear, well-lit product images.
+    * For data analysis, ensure your CSV/Excel file has columns named 'Product' and 'Revenue'.
+    * **Crucial for Market Prices:**
+        * Download the World Bank food price data CSV and place it as `WB_Nigeria_Food_Prices.csv` in the app's directory.
+        * **Verify and adjust the `column_map` in the `load_world_bank_data` function within the script to match your CSV's exact column headers.**
+        * **Continuously update the `PRODUCT_NAME_SYNONYM_MAP` in the script** as you test with different images to improve product matching between Vision AI and the World Bank data.
+
+    We hope this tool empowers your business!
+    ---
+    *(Developed in Akure, Ondo State, Nigeria)*
+    """)
+# --- END OF Welcome Message Expander ---
+
 st.markdown("---")
 
 # --- 3. Sidebar for User Inputs ---
@@ -218,11 +265,13 @@ if uploaded_image is not None:
                  if key in st.session_state: del st.session_state[key]
         except Exception as e: st.error(f"Error processing uploaded image: {e}"); st.session_state.pil_image = None; st.session_state.image_bytes = None
 if uploaded_file is not None:
-    if st.session_state.df is None:
+    if st.session_state.df is None or (hasattr(st.session_state.df, '_uploaded_filename') and st.session_state.df._uploaded_filename != uploaded_file.name): # Basic check if new file
         try:
             if uploaded_file.name.endswith('.csv'): st.session_state.df = pd.read_csv(uploaded_file)
             elif uploaded_file.name.endswith(('.xlsx', '.xls')): st.session_state.df = pd.read_excel(uploaded_file)
+            st.session_state.df._uploaded_filename = uploaded_file.name # Store filename for comparison
         except Exception as e: st.error(f"Error reading data file: {e}"); st.session_state.df = None
+
 
 # --- Run Analysis if Inputs are Ready and results not yet in session_state ---
 if st.session_state.image_bytes and not st.session_state.product_info:
@@ -241,6 +290,7 @@ if st.session_state.product_info and st.session_state.market_data and \
 tab1, tab2, tab3 = st.tabs(["📂 Asset Previews", "📊 AI Analysis", "📝 Campaign Content"])
 
 with tab1:
+    # (Tab 1 content as previously provided)
     st.header("📂 Asset Previews")
     col1_preview, col2_preview = st.columns(2)
     with col1_preview:
@@ -254,21 +304,20 @@ with tab1:
     st.markdown("---")
 
 with tab2:
+    # (Tab 2 content with PROMINENT Vision AI results as previously provided)
     st.header("📊 AI Analysis & Insights")
     col_img_analysis, col_mkt_analysis, col_data_analysis = st.columns(3)
     with col_img_analysis:
-        st.subheader("👁️ Image Analysis") # Consistent Subheader
-        # --- MODIFIED DISPLAY for Vision AI Results ---
+        st.subheader("👁️ Image Analysis")
         if st.session_state.product_info:
             st.markdown(f"**🎯 Identified Product:** {st.session_state.product_info.get('product', 'N/A')}")
-            st.markdown(f"**📊 Confidence Score:** **{st.session_state.product_info.get('confidence', 0)*100:.1f}%**") # Bolding score
+            st.markdown(f"**📊 Confidence Score:** **{st.session_state.product_info.get('confidence', 0)*100:.1f}%**")
             st.markdown(f"**📋 Condition (from AI):** {st.session_state.product_info.get('condition', 'N/A')}")
             st.markdown(f"**🖼️ Setting (from AI):** {st.session_state.product_info.get('setting', 'N/A')}")
         else:
             st.info("Awaiting image upload for AI analysis results to appear here.")
-        # --- END OF MODIFICATION ---
     with col_mkt_analysis:
-        st.subheader("📈 Market Insights (WB Data)") # Consistent Subheader
+        st.subheader("📈 Market Insights (WB Data)")
         if st.session_state.market_data:
             st.markdown(f"- **Price ({st.session_state.market_data.get('location', 'N/A')}):** **{st.session_state.market_data.get('price', 'N/A')}**")
             st.markdown(f"- **Unit:** {st.session_state.market_data.get('unit', 'N/A')}")
@@ -277,7 +326,7 @@ with tab2:
         else:
             st.info("Awaiting image analysis & product match in WB data for insights.")
     with col_data_analysis:
-        st.subheader("💹 Data Highlights") # Consistent Subheader
+        st.subheader("💹 Data Highlights")
         if st.session_state.df is not None:
             required_cols = ['Product', 'Revenue']
             if all(col in st.session_state.df.columns for col in required_cols):
@@ -296,6 +345,7 @@ with tab2:
     st.markdown("---")
 
 with tab3:
+    # (Tab 3 content with EDITABLE text areas as previously provided)
     st.header("📝 Campaign Content & Export")
     if st.session_state.campaign_copy:
         st.subheader("✏️ Review & Edit Your Campaign Copy")
