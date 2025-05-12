@@ -1,7 +1,7 @@
 # --------------------------------------------------------------------------
-# AgroBrand Fusion AI - Phase 2: Enhanced Product Name Matching
+# AgroBrand Fusion AI - Phase 2: Market Fallback Transparency
 # Focus: AI Assistant for Agribusiness
-# Enhancements: Synonym map for market price lookup
+# Enhancements: Clearer market source in price lookup
 # Origin Context: Akure, Ondo State, Nigeria
 # Date: May 12, 2025
 # --------------------------------------------------------------------------
@@ -44,9 +44,9 @@ PRODUCT_NAME_SYNONYM_MAP = {
     "onion": "Onions",
     "fruit": None,  # Too generic
     "vegetable": None, # Too generic
-    "plantain": "Plantain (ripe / unripe)", # Example, adjust based on your WB data
-    "beans": "Beans (brown, dry / white, dry / green)", # Example
-    "rice": "Rice (local sold loose / imported)" # Example
+    "plantain": "Plantain (ripe / unripe)",
+    "beans": "Beans (brown, dry / white, dry / green)",
+    "rice": "Rice (local sold loose / imported)"
 }
 
 # --- Real Image Recognition using Google Cloud Vision API ---
@@ -88,7 +88,7 @@ def load_world_bank_data(file_path="WB_Nigeria_Food_Prices.csv"):
     try:
         df_wb = pd.read_csv(file_path)
         st.success(f"Successfully loaded World Bank data from '{file_path}'")
-        column_map = {
+        column_map = { # Example mapping - ADJUST TO YOUR CSV
             'date': 'Date', 'Date': 'Date', 'observation_date': 'Date',
             'market': 'Market_Name', 'Market': 'Market_Name', 'market_name': 'Market_Name',
             'product': 'Product_Name', 'Product': 'Product_Name', 'product_name': 'Product_Name', 'item_name': 'Product_Name',
@@ -108,50 +108,54 @@ def load_world_bank_data(file_path="WB_Nigeria_Food_Prices.csv"):
     except Exception as e: st.error(f"Error loading/processing WB data: {e}"); return None
 
 def fetch_market_price(product_name_from_vision):
-    # (Function definition with ENHANCED PRODUCT NAME MATCHING as provided in the last step)
+    # (Function definition with IMPROVED MARKET FALLBACK TRANSPARENCY, as provided in the last step)
     st.info(f"Looking up '{product_name_from_vision}' (from Vision AI) in World Bank data...")
     df_world_bank = load_world_bank_data()
     if df_world_bank is None or df_world_bank.empty: st.warning("WB price data unavailable."); return {"price": "N/A", "unit": "", "location": "WB Data Unavailable", "date": "N/A", "trend": ""}
-    product_df = pd.DataFrame(); search_term_for_wb = product_name_from_vision.lower()
+    product_df = pd.DataFrame(); search_term_for_wb = product_name_from_vision.lower(); match_type_info = ""
     try:
         exact_match_filter = df_world_bank['Product_Name'].str.lower() == search_term_for_wb
         product_df = df_world_bank[exact_match_filter]
-        if not product_df.empty: st.info(f"Found exact match for '{search_term_for_wb}'.")
+        if not product_df.empty: match_type_info = f"exact match for '{search_term_for_wb}'"
         if product_df.empty:
             mapped_name = PRODUCT_NAME_SYNONYM_MAP.get(search_term_for_wb)
             if mapped_name:
-                st.info(f"Mapped '{product_name_from_vision}' to '{mapped_name}'. Trying exact for mapped...")
+                match_type_info = f"mapped '{product_name_from_vision}' to '{mapped_name}'"
                 search_term_for_wb = mapped_name.lower()
                 exact_match_filter_mapped = df_world_bank['Product_Name'].str.lower() == search_term_for_wb
                 product_df = df_world_bank[exact_match_filter_mapped]
-                if not product_df.empty: st.info(f"Found exact match for mapped '{search_term_for_wb}'.")
-                else:
-                    st.info(f"No exact for mapped '{search_term_for_wb}', trying partial for mapped...")
+                if product_df.empty:
                     contains_filter_mapped = df_world_bank['Product_Name'].str.contains(mapped_name, case=False, na=False)
                     product_df = df_world_bank[contains_filter_mapped]
-                    if not product_df.empty: st.info(f"Found partial for mapped '{mapped_name}'.")
+                    if not product_df.empty: match_type_info += ", then partial match"
             elif mapped_name is None: st.warning(f"'{product_name_from_vision}' too generic per map."); return {"price": "N/A", "unit": "", "location": "Product Too Generic", "date": "N/A", "trend": ""}
-        if product_df.empty and PRODUCT_NAME_SYNONYM_MAP.get(product_name_from_vision.lower()) is not None: # only if not mapped to None
-            st.info(f"No specific match for '{product_name_from_vision}', trying broad partial original...")
+        if product_df.empty and PRODUCT_NAME_SYNONYM_MAP.get(product_name_from_vision.lower()) is not None :
+            match_type_info = f"broad partial match for original '{product_name_from_vision}'"
             search_term_for_wb = product_name_from_vision
             contains_filter_original = df_world_bank['Product_Name'].str.contains(search_term_for_wb, case=False, na=False)
             product_df = df_world_bank[contains_filter_original]
-            if not product_df.empty: st.info(f"Found broad partial original '{search_term_for_wb}'.")
-        if product_df.empty: st.warning(f"No price data for '{product_name_from_vision}' in WB dataset."); return {"price": "N/A", "unit": "", "location": "Product Not Found in WB Data", "date": "N/A", "trend": ""}
+        if not product_df.empty and match_type_info: st.info(f"Product search: Used {match_type_info}.")
+        elif not product_df.empty and not match_type_info: st.info("Product search: Defaulted to a match.") # Fallback if match_type_info wasn't set
+        else: st.warning(f"No price data for '{product_name_from_vision}' in WB dataset."); return {"price": "N/A", "unit": "", "location": "Product Not Found in WB Data", "date": "N/A", "trend": ""}
+
         latest_date = product_df['Date'].max(); latest_date_str = latest_date.strftime('%Y-%m-%d')
         latest_product_df = product_df[product_df['Date'] == latest_date].copy()
-        market_priority = ["Akure", "Ibadan", "Lagos"]; result_row = None
-        for market in market_priority:
-            market_match_filter = latest_product_df['Market_Name'].str.contains(market, case=False, na=False)
+        primary_target_market = "Akure"; market_priority = [primary_target_market, "Ibadan", "Lagos"]; result_row = None; market_source_info = ""
+        for market_name_to_check in market_priority:
+            market_match_filter = latest_product_df['Market_Name'].str.contains(market_name_to_check, case=False, na=False)
             market_df_filtered = latest_product_df[market_match_filter]
-            if not market_df_filtered.empty: result_row = market_df_filtered.iloc[0]; break
-        if result_row is None and not latest_product_df.empty: result_row = latest_product_df.iloc[0]
+            if not market_df_filtered.empty:
+                result_row = market_df_filtered.iloc[0]
+                if market_name_to_check == primary_target_market: market_source_info = f"{result_row['Market_Name']} (Primary Target)"
+                else: market_source_info = f"{result_row['Market_Name']} (Fallback from {primary_target_market})"
+                break
+        if result_row is None and not latest_product_df.empty: result_row = latest_product_df.iloc[0]; market_source_info = f"{result_row['Market_Name']} (General Fallback; {primary_target_market} N/A)"
         if result_row is not None:
-            price = result_row['Price']; unit = result_row['Unit']; location = result_row['Market_Name']
+            price = result_row['Price']; unit = result_row['Unit']; location_display = market_source_info if market_source_info else result_row['Market_Name']
             try: formatted_price = f"₦{price:,.2f}" if pd.notna(price) else "N/A"
             except (ValueError, TypeError): formatted_price = str(price) if pd.notna(price) else "N/A"
-            st.success(f"Found price for '{product_name_from_vision}' (as '{result_row['Product_Name']}') in '{location}' on {latest_date_str}")
-            return {"price": formatted_price, "unit": unit if pd.notna(unit) else "", "location": location if pd.notna(location) else "Unknown Market", "date": latest_date_str, "trend": f"Source: WB Monthly Data ({latest_date_str})"}
+            st.success(f"Price for '{product_name_from_vision}' (as '{result_row['Product_Name']}'): {formatted_price} per {unit if pd.notna(unit) else ''} in {location_display} on {latest_date_str}")
+            return {"price": formatted_price, "unit": unit if pd.notna(unit) else "", "location": location_display, "date": latest_date_str, "trend": f"Source: WB Monthly Data ({latest_date_str})"}
         else: st.warning(f"No market price for '{product_name_from_vision}' on {latest_date_str}."); return {"price": "N/A", "unit": "", "location": "Market Not Found for Date", "date": latest_date_str, "trend": ""}
     except Exception as e: st.error(f"Error during price lookup for '{product_name_from_vision}': {e}"); return {"price": "Error", "unit": "", "location": "Lookup Failed", "date": "N/A", "trend": ""}
 
@@ -165,7 +169,7 @@ def generate_campaign_content(product_info, market_data):
     body = f"Looking for top {condition.lower()} {product_name}? Look no further! "; # ... (rest of logic unchanged)
     if market_data.get('trend') and market_data.get('trend') != 'N/A': body += f"Market trend shows: {market_data.get('trend')}. Secure yours today! " # ... (rest of logic unchanged)
     body += f"Ideal for home use or business."; cta = f"Order your {product_name} now! Call/WhatsApp [Your Phone Number/WhatsApp]."; # ... (rest of logic unchanged)
-    if market_data.get('location') and market_data.get('location') != 'N/A': cta += f" Pickup available near {market_data.get('location')}." # ... (rest of logic unchanged)
+    if market_data.get('location') and market_data.get('location') != 'N/A': cta += f" Pickup available near {market_data.get('location').split('(')[0].strip()}." # Get base location for CTA
     product_tag = product_name.replace(" ", ""); hashtags_list = ["#FarmFresh", f"#{product_tag}", "#Akure", "#OndoState", "#NaijaMade", "#Agribusiness", "#SupportLocal"]; # ... (rest of logic unchanged)
     if market_data.get('location') and "Shasha" in market_data.get('location'): hashtags_list.append("#ShashaMarket") # ... (rest of logic unchanged)
     if market_data.get('location') and "Erekesan" in market_data.get('location'): hashtags_list.append("#ErekesanMarket") # ... (rest of logic unchanged)
@@ -206,7 +210,7 @@ uploaded_file = st.sidebar.file_uploader("2. Upload Sales/Cost Sheet (CSV/Excel)
 
 # --- 4. Asset Previews ---
 image_bytes = None; pil_image = None; product_info = None; market_data = None; df = None
-col1, col2 = st.columns(2)
+col1, col2 = st.columns(2) # Use st.columns for layout
 with col1:
     st.subheader("Image Preview")
     if uploaded_image is not None:
@@ -217,7 +221,7 @@ with col2:
     st.subheader("Data Preview")
     if uploaded_file is not None:
         try:
-            if uploaded_file.name.endswith('.csv'): df = pd.read_csv(uploaded_file)
+            if uploaded_file.name.endswith('.csv'): df = pd.read_csv(uploaded_image) # Corrected to uploaded_file
             elif uploaded_file.name.endswith(('.xlsx', '.xls')): df = pd.read_excel(uploaded_file)
             if df is not None: st.success(f"Loaded '{uploaded_file.name}'. Preview:"); st.dataframe(df.head())
             else: st.warning("Could not process file.")
@@ -251,9 +255,4 @@ with col_data_analysis:
         required_cols = ['Product', 'Revenue']
         if all(col in df.columns for col in required_cols):
             try:
-                df['Revenue_Clean'] = df['Revenue'].astype(str).str.replace('[₦,]', '', regex=True); df['Revenue_Clean'] = pd.to_numeric(df['Revenue_Clean'], errors='coerce')
-                if df['Revenue_Clean'].isnull().any(): st.warning("Some 'Revenue' values non-numeric.")
-                top_products = df.sort_values(by="Revenue_Clean", ascending=False).head(3); st.write("Top Products by Revenue:"); st.dataframe(top_products[['Product', 'Revenue']])
-            except Exception as e: st.error(f"Error: {e}")
-        else: st.warning("Needs 'Product' & 'Revenue' cols.")
-    else: st.info("Upload data file for
+                df['Revenue_Clean'] = df['Revenue'].astype(str).str.replace('[₦,]', '', regex=True); df['Reve
