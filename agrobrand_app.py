@@ -1,7 +1,7 @@
 # --------------------------------------------------------------------------
-# AgroBrand Fusion AI - Phase 2: UI/UX - Enhanced PDF Report
+# AgroBrand Fusion AI - Phase 2: UI/UX - Refined Tab 3 Guidance
 # Focus: AI Assistant for Agribusiness
-# Enhancements: Added sales insights & disclaimers to PDF
+# Enhancements: Clearer "no content" messages in Campaign Tab
 # Origin Context: Akure, Ondo State, Nigeria
 # Date: May 12, 2025
 # --------------------------------------------------------------------------
@@ -36,7 +36,7 @@ PRODUCT_NAME_SYNONYM_MAP = {
     "rice": "Rice (local sold loose / imported)"
 }
 
-# --- Helper Functions ---
+# --- Helper Functions (All definitions as provided in previous full script) ---
 def identify_product_via_web(image_bytes):
     # (Full function definition from previous steps)
     credentials = None; client = None
@@ -161,137 +161,46 @@ def generate_campaign_content(product_info, market_data):
     hashtags = " ".join(hashtags_list)
     return {"headline": headline, "body": body, "cta": cta, "hashtags": hashtags}
 
-# --- MODIFIED PDF Generation Function ---
 def generate_campaign_pdf(product_info, market_data, campaign_copy_dict, image=None, sales_insights_df=None, total_sales_revenue=None):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-
-    pdf.set_font("Arial", 'B', 18)
-    pdf.cell(0, 12, "AgroBrand AI Campaign Suggestion", ln=True, align='C')
-    pdf.ln(3)
-
-    pdf.set_font("Arial", size=9)
-    current_date_pdf = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # Use a different variable name
-    pdf.cell(0, 5, f"Generated on: {current_date_pdf} WAT", ln=True, align='R')
-    pdf.ln(7)
-
-    # --- Section 1: Product & Market Information ---
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 10, "1. Product & Market Information", ln=True, border='B')
-    pdf.ln(2)
-    pdf.set_font("Arial", size=11)
-    if product_info:
-        pdf.multi_cell(0, 6, f"- **Identified Product:** {product_info.get('product', 'N/A')} (Confidence: {product_info.get('confidence', 0)*100:.1f}%)")
-        pdf.multi_cell(0, 6, f"- **AI Condition Note:** {product_info.get('condition', 'N/A')}")
-    if market_data:
-        pdf.multi_cell(0, 6, f"- **Market Price ({market_data.get('location', 'N/A')}):** {market_data.get('price', 'N/A')}")
-        pdf.multi_cell(0, 6, f"- **Unit:** {market_data.get('unit', 'N/A')}")
-        pdf.multi_cell(0, 6, f"- **Price Data Date:** {market_data.get('date', 'N/A')}")
-    pdf.ln(5)
-
-    # --- Section 2: Sales Data Highlights (from your sheet) ---
+    # (Full function definition with sales insights and disclaimers from previous steps)
+    pdf = FPDF(); pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=15);
+    pdf.set_font("Arial", 'B', 18); pdf.cell(0, 12, "AgroBrand AI Campaign Suggestion", ln=True, align='C'); pdf.ln(3);
+    pdf.set_font("Arial", size=9); current_date_pdf = datetime.now().strftime("%Y-%m-%d %H:%M:%S"); pdf.cell(0, 5, f"Generated on: {current_date_pdf} WAT", ln=True, align='R'); pdf.ln(7);
+    pdf.set_font("Arial", 'B', 14); pdf.cell(0, 10, "1. Product & Market Information", ln=True, border='B'); pdf.ln(2); pdf.set_font("Arial", size=11);
+    if product_info: pdf.multi_cell(0, 6, f"- **Identified Product:** {product_info.get('product', 'N/A')} (Confidence: {product_info.get('confidence', 0)*100:.1f}%)"); pdf.multi_cell(0, 6, f"- **AI Condition Note:** {product_info.get('condition', 'N/A')}")
+    if market_data: pdf.multi_cell(0, 6, f"- **Market Price ({market_data.get('location', 'N/A')}):** {market_data.get('price', 'N/A')}"); pdf.multi_cell(0, 6, f"- **Unit:** {market_data.get('unit', 'N/A')}"); pdf.multi_cell(0, 6, f"- **Price Data Date:** {market_data.get('date', 'N/A')}");
+    pdf.ln(5);
     if sales_insights_df is not None and not sales_insights_df.empty:
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "2. Sales Data Highlights", ln=True, border='B')
-        pdf.ln(2)
-        pdf.set_font("Arial", size=10)
-        if total_sales_revenue is not None:
-            pdf.set_font('Arial', 'B', 10)
-            pdf.cell(0, 6, f"Total Calculated Revenue from Sheet: ₦{total_sales_revenue:,.0f}", ln=True)
-            pdf.ln(1)
-        pdf.set_font('Arial', 'B', 10)
-        pdf.set_fill_color(230, 230, 230)
-        pdf.cell(100, 7, "Top Product", border=1, fill=True, align='L') # Align left for product
-        pdf.cell(60, 7, "Revenue", border=1, fill=True, align='R')    # Align right for revenue
-        pdf.ln()
-        pdf.set_font('Arial', '', 10)
-        for index, row in sales_insights_df.head(5).iterrows():
-            product_display_name = (str(row['Product'])[:45] + '...') if len(str(row['Product'])) > 48 else str(row['Product'])
-            # Assuming 'Revenue' in sales_insights_df is the original string format
-            revenue_display = str(row['Revenue']) if pd.notna(row['Revenue']) else "N/A"
-            pdf.cell(100, 6, product_display_name, border=1)
-            pdf.cell(60, 6, revenue_display, border=1, align='R')
-            pdf.ln()
+        pdf.set_font("Arial", 'B', 14); pdf.cell(0, 10, "2. Sales Data Highlights", ln=True, border='B'); pdf.ln(2); pdf.set_font("Arial", size=10);
+        if total_sales_revenue is not None: pdf.set_font('Arial', 'B', 10); pdf.cell(0, 6, f"Total Calculated Revenue from Sheet: ₦{total_sales_revenue:,.0f}", ln=True); pdf.ln(1)
+        pdf.set_fill_color(230, 230, 230); pdf.set_font('Arial', 'B', 10); pdf.cell(100, 7, "Top Product", border=1, fill=True, align='L'); pdf.cell(60, 7, "Revenue (Original)", border=1, fill=True, align='R'); pdf.ln();
+        pdf.set_font('Arial', '', 10);
+        for index, row in sales_insights_df.head(5).iterrows(): product_display_name = (str(row['Product'])[:45] + '...') if len(str(row['Product'])) > 48 else str(row['Product']); revenue_display = str(row['Revenue']) if pd.notna(row['Revenue']) else "N/A"; pdf.cell(100, 6, product_display_name, border=1); pdf.cell(60, 6, revenue_display, border=1, align='R'); pdf.ln()
         pdf.ln(5)
-    
-    # Image - Placed after text blocks to simplify layout for now
-    # Better placement might require more complex FPDF table layouts or fixed coordinates
-    if image:
-        pdf.ln(2) # Some space before image
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 6, "Uploaded Product Image:", ln=True)
-        pdf.ln(2)
+    if image: # Simple image placement (adjust as needed)
+        pdf.ln(2); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 6, "Uploaded Product Image:", ln=True); pdf.ln(2);
         try:
-            with io.BytesIO() as image_buffer:
-                image.save(image_buffer, format="PNG") # Use PNG for better compatibility
-                image_buffer.seek(0)
-                # Calculate width and height to fit, maintaining aspect ratio (max width 80)
-                img_w, img_h = image.size
-                aspect = img_h / img_w
-                display_w = 80
-                display_h = display_w * aspect
-                if display_h > 60 : # Max height
-                    display_h = 60
-                    display_w = display_h / aspect
-                
-                current_x = pdf.get_x()
-                page_width = pdf.w - 2 * pdf.l_margin # Usable page width
-                img_x_centered = (page_width - display_w) / 2 + pdf.l_margin
-                
-                pdf.image(image_buffer, x=img_x_centered, w=display_w, h=display_h, type='PNG')
-                pdf.ln(display_h + 5) # Move below image
-        except Exception as e:
-            st.warning(f"Could not embed image in PDF: {e}")
-            pdf.set_font("Arial", 'I', 9)
-            pdf.multi_cell(0,5, "(Image could not be embedded)")
-            pdf.ln(5)
-
-
-    # --- Section 3: AI-Generated Campaign Content ---
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 10, "3. AI-Generated Campaign Content", ln=True, border='B')
-    pdf.ln(2)
-    pdf.set_font("Arial", size=11)
+            with io.BytesIO() as image_buffer: image.save(image_buffer, format="PNG"); image_buffer.seek(0);
+                img_w, img_h = image.size; aspect = img_h / img_w; display_w = 80; display_h = display_w * aspect;
+                if display_h > 60 : display_h = 60; display_w = display_h / aspect
+                current_x = pdf.get_x(); page_width = pdf.w - 2 * pdf.l_margin; img_x_centered = (page_width - display_w) / 2 + pdf.l_margin;
+                pdf.image(image_buffer, x=img_x_centered, w=display_w, h=display_h, type='PNG'); pdf.ln(display_h + 5)
+        except Exception as e: st.warning(f"Could not embed image in PDF: {e}"); pdf.set_font("Arial", 'I', 9); pdf.multi_cell(0,5, "(Image could not be embedded)"); pdf.ln(5)
+    pdf.set_font("Arial", 'B', 14); pdf.cell(0, 10, "3. AI-Generated Campaign Content", ln=True, border='B'); pdf.ln(2); pdf.set_font("Arial", size=11);
     if campaign_copy_dict:
-        pdf.set_font("Arial", 'B', 11); pdf.write(6, "Headline: "); pdf.set_font("Arial", size=11)
-        pdf.multi_cell(0, 6, campaign_copy_dict['headline']); pdf.ln(3)
-        pdf.set_font("Arial", 'B', 11); pdf.write(6, "Body Text: "); pdf.set_font("Arial", size=11)
-        pdf.multi_cell(0, 6, campaign_copy_dict['body']); pdf.ln(3)
-        pdf.set_font("Arial", 'B', 11); pdf.write(6, "Call to Action (CTA): "); pdf.set_font("Arial", size=11)
-        pdf.multi_cell(0, 6, campaign_copy_dict['cta']); pdf.ln(3)
-        pdf.set_font("Arial", 'B', 11); pdf.write(6, "Hashtags: "); pdf.set_font("Arial", size=11)
-        pdf.multi_cell(0, 6, campaign_copy_dict['hashtags']); pdf.ln(7)
-    else:
-        pdf.multi_cell(0,6, "Campaign copy not generated.")
-        pdf.ln(7)
-
-    # --- Section 4: Important Notes & Disclaimers ---
-    pdf.set_font("Arial", 'B', 14) # Section Title Font
-    pdf.cell(0, 10, "4. Important Notes & Disclaimers", ln=True, border='B')
-    pdf.ln(2)
-    pdf.set_font("Arial", 'I', 9)
-    disclaimer_text = (
-        f"- Market price data from World Bank Monthly Estimates (last data point analyzed: {market_data.get('date', 'N/A') if market_data else 'N/A'}). "
-        "These are monthly averages, not live daily prices, and should guide understanding of recent trends.\n"
-        "- AI-generated marketing suggestions are starting points. Review and adapt them to your specific business and audience.\n"
-        "- Sales data insights are based on the data you provided in the uploaded sheet."
-    )
-    pdf.multi_cell(0, 5, disclaimer_text)
-    pdf.ln(5)
-
-    # Footer with Page Number
-    pdf.set_y(-15) # Position 1.5 cm from bottom
-    pdf.set_font("Arial", 'I', 8)
-    pdf.cell(0, 10, f"--- AgroBrand Fusion AI Report © {datetime.now().year} --- Page " + str(pdf.page_no()), 0, 0, 'C')
-
+        pdf.set_font("Arial", 'B', 11); pdf.write(6, "Headline: "); pdf.set_font("Arial", size=11); pdf.multi_cell(0, 6, campaign_copy_dict['headline']); pdf.ln(3);
+        pdf.set_font("Arial", 'B', 11); pdf.write(6, "Body Text: "); pdf.set_font("Arial", size=11); pdf.multi_cell(0, 6, campaign_copy_dict['body']); pdf.ln(3);
+        pdf.set_font("Arial", 'B', 11); pdf.write(6, "Call to Action (CTA): "); pdf.set_font("Arial", size=11); pdf.multi_cell(0, 6, campaign_copy_dict['cta']); pdf.ln(3);
+        pdf.set_font("Arial", 'B', 11); pdf.write(6, "Hashtags: "); pdf.set_font("Arial", size=11); pdf.multi_cell(0, 6, campaign_copy_dict['hashtags']); pdf.ln(7);
+    else: pdf.multi_cell(0,6, "Campaign copy not generated."); pdf.ln(7)
+    pdf.set_font("Arial", 'B', 14); pdf.cell(0, 10, "4. Important Notes & Disclaimers", ln=True, border='B'); pdf.ln(2); pdf.set_font("Arial", 'I', 9);
+    disclaimer_text = (f"- Market price data from World Bank Monthly Estimates (last data point analyzed: {market_data.get('date', 'N/A') if market_data else 'N/A'}). These are monthly averages, not live daily prices, and should guide understanding of recent trends.\n- AI-generated marketing suggestions are starting points. Review and adapt them to your specific business and audience.\n- Sales data insights are based on the data you provided in the uploaded sheet.")
+    pdf.multi_cell(0, 5, disclaimer_text); pdf.ln(5);
+    pdf.set_y(-15); pdf.set_font("Arial", 'I', 8); pdf.cell(0, 10, f"--- AgroBrand Fusion AI Report © {datetime.now().year} --- Page " + str(pdf.page_no()), 0, 0, 'C');
     return pdf.output(dest='S').encode('latin-1')
-# --- END OF MODIFIED PDF Generation ---
-
 
 # --- Initialize Session State Variables ---
 editable_keys = ['editable_headline', 'editable_body', 'editable_cta', 'editable_hashtags']
-# Added 'top_sales_products', 'total_sales_revenue' to data_keys
 data_keys = ['df', 'pil_image', 'image_bytes', 'product_info', 'market_data', 'campaign_copy', 'top_sales_products', 'total_sales_revenue']
 uploader_keys = ['image_uploader_key', 'file_uploader_key']
 for key in data_keys + editable_keys:
@@ -357,7 +266,7 @@ st.sidebar.caption("Provide your product image and optionally, your sales/cost d
 uploaded_image = st.sidebar.file_uploader("1. Upload Product Image", type=["png", "jpg", "jpeg"], key=st.session_state.image_uploader_key, help="Upload a clear image of a single product.")
 uploaded_file = st.sidebar.file_uploader("2. Upload Sales/Cost Sheet (CSV/Excel)", type=["csv", "xlsx"], key=st.session_state.file_uploader_key, help="For 'Data Highlights', ensure 'Product' & 'Revenue' columns exist.")
 if st.sidebar.button("🔄 Reset All / Start Over"):
-    keys_to_clear_on_reset = data_keys + editable_keys # This now includes 'top_sales_products', 'total_sales_revenue'
+    keys_to_clear_on_reset = data_keys + editable_keys
     for key in keys_to_clear_on_reset:
         if key in st.session_state: del st.session_state[key]
     st.session_state.image_uploader_key = f"image_uploader_{int(st.session_state.image_uploader_key.split('_')[-1]) + 1}"
@@ -384,7 +293,7 @@ if uploaded_file is not None:
             if uploaded_file.name.endswith('.csv'): st.session_state.df = pd.read_csv(uploaded_file)
             elif uploaded_file.name.endswith(('.xlsx', '.xls')): st.session_state.df = pd.read_excel(uploaded_file)
             st.session_state.df._uploaded_filename = uploaded_file.name
-            for key_to_clear in ['top_sales_products', 'total_sales_revenue']: # Clear previous sales analysis
+            for key_to_clear in ['top_sales_products', 'total_sales_revenue']:
                  if key_to_clear in st.session_state: del st.session_state[key_to_clear]
         except Exception as e: st.error(f"Error reading data file: {e}"); st.session_state.df = None
 
@@ -438,13 +347,12 @@ with tab2:
             st.markdown(f"- **Source/Trend:** {st.session_state.market_data.get('trend', 'N/A')}")
         else:
             st.info("Awaiting image analysis & product match in WB data for insights.")
-    # --- Updated col_data_analysis ---
     with col_data_analysis:
         st.subheader("💹 Data Highlights")
         if st.session_state.df is not None:
             required_cols = ['Product', 'Revenue']
             if not all(col in st.session_state.df.columns for col in required_cols):
-                st.warning("For Data Highlights, CSV/Excel needs 'Product' & 'Revenue' columns.")
+                st.warning("For Data Highlights, your CSV/Excel file needs columns explicitly named 'Product' and 'Revenue'.")
                 st.session_state.total_sales_revenue = None
                 st.session_state.top_sales_products = None
             else:
@@ -459,7 +367,7 @@ with tab2:
                          temp_df['Revenue_Clean'] = pd.to_numeric(temp_df['Revenue'], errors='coerce')
 
                     if temp_df['Revenue_Clean'].isnull().all():
-                        st.warning("Could not parse 'Revenue' into numbers. Check data format.")
+                        st.warning("Could not parse 'Revenue' column into numbers. Please check data format.")
                         st.session_state.total_sales_revenue = None
                         st.session_state.top_sales_products = None
                     else:
@@ -475,7 +383,7 @@ with tab2:
                             st.dataframe(top_5_products[['Product', 'Revenue', 'Revenue_Clean']].rename(columns={'Revenue_Clean': 'Revenue (Numeric)'}))
                             st.session_state.top_sales_products = top_5_products[['Product', 'Revenue']]
                         else:
-                            st.info("No revenue data for top products after cleaning.")
+                            st.info("No revenue data to display top products after cleaning.")
                             st.session_state.top_sales_products = None
                 except Exception as e:
                     st.error(f"Error analyzing sales data: {e}")
@@ -484,12 +392,13 @@ with tab2:
                     st.session_state.top_sales_products = None
         else:
             st.info("Awaiting data file upload (CSV/Excel) for highlights.")
-            st.session_state.total_sales_revenue = None
-            st.session_state.top_sales_products = None
+            st.session_state.total_sales_revenue = None # Ensure reset
+            st.session_state.top_sales_products = None  # Ensure reset
     st.markdown("---")
 
 with tab3:
     st.header("📝 Campaign Content & Export")
+    # --- MODIFIED Logic for conditional display in Tab 3 ---
     if st.session_state.campaign_copy:
         st.subheader("✏️ Review & Edit Your Campaign Copy")
         st.text_area("Headline:", value=st.session_state.get('editable_headline', st.session_state.campaign_copy.get('headline', '')), height=100, key="editable_headline", help="Edit the AI-suggested headline here.")
@@ -520,25 +429,23 @@ Hashtags:
         with col_pdf_dl:
             try:
                 edited_campaign_details_for_pdf = {"headline": st.session_state.editable_headline, "body": st.session_state.editable_body, "cta": st.session_state.editable_cta, "hashtags": st.session_state.editable_hashtags}
-                pdf_bytes = generate_campaign_pdf(
-                    st.session_state.product_info,
-                    st.session_state.market_data,
-                    edited_campaign_details_for_pdf,
-                    st.session_state.pil_image,
-                    sales_insights_df=st.session_state.top_sales_products, # Pass top products df
-                    total_sales_revenue=st.session_state.total_sales_revenue # Pass total revenue
-                )
+                pdf_bytes = generate_campaign_pdf(st.session_state.product_info, st.session_state.market_data, edited_campaign_details_for_pdf, st.session_state.pil_image, sales_insights_df=st.session_state.top_sales_products, total_sales_revenue=st.session_state.total_sales_revenue)
                 current_date_str = datetime.now().strftime("%Y%m%d"); product_name_for_file = st.session_state.product_info.get('product', 'campaign').lower().replace(' ', '_'); pdf_file_name = f"{product_name_for_file}_campaign_{current_date_str}.pdf"
                 b64_pdf = base64.b64encode(pdf_bytes).decode(); pdf_download_link = f'<a href="data:application/octet-stream;base64,{b64_pdf}" download="{pdf_file_name}">Download Report (.pdf)</a>'; st.markdown(pdf_download_link, unsafe_allow_html=True)
-            except Exception as e: st.error(f"Error generating PDF download: {e}") # import traceback; st.text(traceback.format_exc()) # For debugging
-    elif st.session_state.product_info and (not st.session_state.market_data or st.session_state.market_data.get('price') == 'N/A' or st.session_state.market_data.get('price') == 'Error'):
-        st.warning(f"Successfully identified '{st.session_state.product_info.get('product')}' but could not find/retrieve its price. Campaign generation might be limited.")
-    elif st.session_state.df is not None:
-        st.info("Upload a product image for full campaign generation and download options.")
-    else:
-        st.info("Upload a product image and/or data file to generate campaign suggestions and enable downloads.")
+            except Exception as e: st.error(f"Error generating PDF download: {e}")
+    else: # Refined guidance if campaign_copy is None
+        st.markdown("---") # Add a separator
+        if not st.session_state.product_info and not st.session_state.df:
+            st.info("ℹ️ Please upload a product image (via the sidebar) to identify a product and generate campaign suggestions. Optionally, upload a sales data file for additional insights.")
+        elif not st.session_state.product_info and st.session_state.df is not None:
+            st.info("ℹ️ A sales data file has been uploaded. Now, please upload a product image (via the sidebar) to identify a product. Campaign content will be generated once a product is identified and its market price is found.")
+        elif st.session_state.product_info and (not st.session_state.market_data or st.session_state.market_data.get('price') == 'N/A' or st.session_state.market_data.get('price') == 'Error'):
+            st.warning(f"⚠️ Product identified as '{st.session_state.product_info.get('product', 'Unknown')}', but its market price could not be retrieved. Campaign content requires market context for generation. Please check product name mapping or World Bank data availability for this item.")
+        else:
+            st.info("ℹ️ Campaign content could not be generated. Please ensure a product image is successfully analyzed and market price information is available.")
+        st.markdown("---")
+    # --- END OF MODIFIED Logic for Tab 3 ---
 
 # --- 7. Footer ---
 st.markdown("---")
 st.caption(f"Developed in Akure, Ondo State, Nigeria | AgroBrand Fusion AI © {datetime.now().year}")
-
