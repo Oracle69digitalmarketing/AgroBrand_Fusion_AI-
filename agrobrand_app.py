@@ -8,7 +8,7 @@
 
 # Import necessary libraries
 import streamlit as st
-import pandas as pd # For handling data files later
+import pandas as pd # For handling data files
 from PIL import Image # Pillow library for image handling
 import io # For handling file streams
 
@@ -41,37 +41,66 @@ uploaded_file = st.sidebar.file_uploader(
 # --- 4. Main Content Area ---
 st.subheader("Uploaded Asset Preview")
 
-# --- ADDED LOGIC: Display Uploaded Image ---
+# --- Display Uploaded Image ---
 if uploaded_image is not None:
-    # Check if an image has been uploaded
     try:
-        # Open the uploaded image file using Pillow
         image = Image.open(uploaded_image)
-
-        # Display the image
         st.image(
             image,
-            caption=f"Uploaded: {uploaded_image.name}", # Show filename in caption
-            use_column_width=True # Adjust image width to column width
+            caption=f"Uploaded: {uploaded_image.name}",
+            use_column_width=True
         )
-        st.markdown("---") # Separator after image
+        st.markdown("---")
     except Exception as e:
         st.error(f"Error displaying image: {e}")
         st.markdown("---")
 else:
-    # Show a placeholder message if no image is uploaded yet
     st.info("A preview of your uploaded product image will appear here.")
     st.markdown("---")
 
 
-# --- Placeholder for Data Preview and Analysis ---
-st.subheader("Data Preview & Analysis (Coming Soon...)")
+# --- ADDED LOGIC: Read and Preview Uploaded Data File ---
+st.subheader("Data Preview & Analysis")
+
+# Initialize dataframe variable
+df = None
 
 if uploaded_file is not None:
-    # Logic to read and display data will go here
-    st.success(f"Data file '{uploaded_file.name}' uploaded. Preview coming next!")
+    try:
+        # Check file type and read using pandas
+        if uploaded_file.name.endswith('.csv'):
+            df = pd.read_csv(uploaded_file)
+        elif uploaded_file.name.endswith(('.xlsx', '.xls')):
+            # Requires openpyxl (pip install openpyxl) for .xlsx
+            # Might require xlrd (pip install xlrd) for older .xls
+            df = pd.read_excel(uploaded_file)
+
+        # Check if dataframe was loaded successfully
+        if df is not None:
+            st.success(f"Successfully loaded data from '{uploaded_file.name}'.")
+            st.write("Preview of the first 5 rows:")
+            # Display the first 5 rows of the dataframe
+            st.dataframe(df.head())
+        else:
+            # This case might be redundant if exceptions catch failures, but good practice
+             st.warning("Could not process the uploaded file.")
+
+    except Exception as e:
+        st.error(f"Error reading data file: {e}")
+        st.info("Please ensure the file is a valid CSV or Excel file and is not corrupted or password protected.")
+        df = None # Ensure df is None if reading failed
+
 else:
-    st.info("Upload a CSV or Excel file to see a data preview and analysis.")
+    st.info("Upload a CSV or Excel file using the sidebar to see a data preview and analysis.")
+
+# --- Placeholder for Analysis Results ---
+# We will use the 'df' dataframe and image info later for analysis
+st.markdown("---")
+st.subheader("Generated Insights (Coming Soon...)")
+if df is not None or uploaded_image is not None:
+     st.write("Next steps will involve analyzing the uploaded assets...")
+else:
+    st.write("Upload an image and/or data file to enable analysis.")
 
 
 # --- 5. Footer (Optional) ---
