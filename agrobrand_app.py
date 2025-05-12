@@ -1,7 +1,7 @@
 # --------------------------------------------------------------------------
-# AgroBrand Fusion AI - Phase 2: UI/UX - Refined Tab 3 Guidance
+# AgroBrand Fusion AI - Phase 2: UI/UX - Refined WB Data Load Messages
 # Focus: AI Assistant for Agribusiness
-# Enhancements: Clearer "no content" messages in Campaign Tab
+# Enhancements: Clearer error handling for World Bank data loading
 # Origin Context: Akure, Ondo State, Nigeria
 # Date: May 12, 2025
 # --------------------------------------------------------------------------
@@ -36,7 +36,7 @@ PRODUCT_NAME_SYNONYM_MAP = {
     "rice": "Rice (local sold loose / imported)"
 }
 
-# --- Helper Functions (All definitions as provided in previous full script) ---
+# --- Helper Functions ---
 def identify_product_via_web(image_bytes):
     # (Full function definition from previous steps)
     credentials = None; client = None
@@ -67,30 +67,81 @@ def identify_product_via_web(image_bytes):
     else: st.warning("Could not select a primary product label from Vision AI results.")
     return product_info_val
 
+# --- MODIFIED World Bank Data Loading Function ---
 @st.cache_data
 def load_world_bank_data(file_path="WB_Nigeria_Food_Prices.csv"):
-    # (Full function definition from previous steps)
+    """
+    Loads and preprocesses the World Bank Food Price data from a local CSV file.
+    Returns a Pandas DataFrame or None if loading fails.
+    CRITICAL: User must download the CSV and adjust column_map if necessary.
+    """
     try:
         df_wb = pd.read_csv(file_path)
-        st.success(f"Successfully loaded World Bank data from '{file_path}'")
+        # Success message moved to after all processing
+
+        # --- Basic Preprocessing ---
+        # !!! ADJUST THIS MAPPING BASED ON YOUR ACTUAL CSV HEADERS !!!
         column_map = {
-            'date': 'Date', 'Date': 'Date', 'observation_date': 'Date',
-            'market': 'Market_Name', 'Market': 'Market_Name', 'market_name': 'Market_Name',
-            'product': 'Product_Name', 'Product': 'Product_Name', 'product_name': 'Product_Name', 'item_name': 'Product_Name',
-            'unit': 'Unit', 'Unit': 'Unit', 'unit_of_measure': 'Unit',
-            'price': 'Price', 'Price': 'Price', 'value': 'Price'
+            'date': 'Date', 'Date': 'Date', 'observation_date': 'Date', 'period': 'Date',
+            'market': 'Market_Name', 'Market': 'Market_Name', 'market_name': 'Market_Name', 'location': 'Market_Name',
+            'product': 'Product_Name', 'Product': 'Product_Name', 'product_name': 'Product_Name', 'item_name': 'Product_Name', 'item': 'Product_Name', 'commodity': 'Product_Name',
+            'unit': 'Unit', 'Unit': 'Unit', 'unit_of_measure': 'Unit', 'measure': 'Unit',
+            'price': 'Price', 'Price': 'Price', 'value': 'Price', 'average_price': 'Price'
         }
         df_wb.rename(columns={k: v for k, v in column_map.items() if k in df_wb.columns}, inplace=True)
+
         required_cols = ['Date', 'Market_Name', 'Product_Name', 'Unit', 'Price']
-        if not all(col in df_wb.columns for col in required_cols): missing = [col for col in required_cols if col not in df_wb.columns]; st.error(f"WB data CSV missing: {missing}. Check file/map."); return None
-        try: df_wb['Date'] = pd.to_datetime(df_wb['Date'])
-        except Exception as date_err: st.error(f"Error parsing 'Date' in WB data: {date_err}."); return None
+        if not all(col in df_wb.columns for col in required_cols):
+            missing = [col for col in required_cols if col not in df_wb.columns]
+            st.error(
+                f"**DATA SETUP ERROR:** Your '{file_path}' CSV seems to be missing expected columns after trying to map them. "
+                f"Specifically, columns named: **`{', '.join(missing)}`** could not be found. "
+                f"Please open your CSV file and compare its headers to the `column_map` dictionary within the "
+                f"`load_world_bank_data` function in the script. **You MUST edit the `column_map` in the script** "
+                f"to exactly match your CSV's headers for date, market, product, unit, and price information."
+            )
+            return None
+
+        try:
+            df_wb['Date'] = pd.to_datetime(df_wb['Date'])
+        except Exception as date_err:
+            st.error(
+                f"**DATE FORMAT ERROR:** Could not parse the 'Date' column in '{file_path}'. Error: {date_err}. "
+                f"Please ensure dates in your CSV are in a standard, recognizable format (e.g., YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY). "
+                f"Inconsistent or unusual date formats throughout the column can also cause this issue."
+            )
+            return None
+
         df_wb['Price'] = pd.to_numeric(df_wb['Price'], errors='coerce')
-        df_wb.dropna(subset=['Price', 'Product_Name', 'Market_Name'], inplace=True)
-        st.info(f"World Bank data processed: {len(df_wb)} records, latest date: {df_wb['Date'].max().strftime('%Y-%m-%d') if not df_wb.empty else 'N/A'}")
+        df_wb.dropna(subset=['Price', 'Product_Name', 'Market_Name', 'Date'], inplace=True)
+
+        if df_wb.empty:
+            st.warning(f"No valid data records found in '{file_path}' after processing. Please check the file content and column mapping.")
+            return None
+
+        st.success(
+            f"✅ World Bank data ('{file_path}') loaded and processed: {len(df_wb)} valid records found. "
+            f"Latest price data point in this dataset is from: **{df_wb['Date'].max().strftime('%B %d, %Y')}**."
+        )
         return df_wb
-    except FileNotFoundError: st.error(f"CRITICAL: WB data file '{file_path}' not found. Download & place it correctly."); return None
-    except Exception as e: st.error(f"Error loading/processing WB data: {e}"); return None
+
+    except FileNotFoundError:
+        st.error(
+            f"**CRITICAL FILE ERROR:** The World Bank data file (expected as **'{file_path}'**) was not found in the application's directory. "
+            f"Please download the correct CSV file, ensure it is named **'{file_path}'**, and place it in the same folder as the `agrobrand_app.py` script. "
+            f"The application cannot fetch market prices without this file."
+        )
+        return None
+    except pd.errors.EmptyDataError:
+        st.error(f"**FILE CONTENT ERROR:** The file '{file_path}' is empty. Please ensure it contains valid data.")
+        return None
+    except Exception as e:
+        st.error(
+            f"**UNEXPECTED ERROR:** An unexpected error occurred while loading or processing '{file_path}': {e}. "
+            f"Please check the CSV file for corruption, very unusual formatting, or contact support if the issue persists."
+        )
+        return None
+# --- END OF MODIFIED World Bank Data Loading ---
 
 def fetch_market_price(product_name_from_vision):
     # (Full function definition with fallback transparency from previous steps)
@@ -177,7 +228,7 @@ def generate_campaign_pdf(product_info, market_data, campaign_copy_dict, image=N
         pdf.set_font('Arial', '', 10);
         for index, row in sales_insights_df.head(5).iterrows(): product_display_name = (str(row['Product'])[:45] + '...') if len(str(row['Product'])) > 48 else str(row['Product']); revenue_display = str(row['Revenue']) if pd.notna(row['Revenue']) else "N/A"; pdf.cell(100, 6, product_display_name, border=1); pdf.cell(60, 6, revenue_display, border=1, align='R'); pdf.ln()
         pdf.ln(5)
-    if image: # Simple image placement (adjust as needed)
+    if image:
         pdf.ln(2); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 6, "Uploaded Product Image:", ln=True); pdf.ln(2);
         try:
             with io.BytesIO() as image_buffer: image.save(image_buffer, format="PNG"); image_buffer.seek(0);
@@ -392,13 +443,12 @@ with tab2:
                     st.session_state.top_sales_products = None
         else:
             st.info("Awaiting data file upload (CSV/Excel) for highlights.")
-            st.session_state.total_sales_revenue = None # Ensure reset
-            st.session_state.top_sales_products = None  # Ensure reset
+            st.session_state.total_sales_revenue = None
+            st.session_state.top_sales_products = None
     st.markdown("---")
 
 with tab3:
     st.header("📝 Campaign Content & Export")
-    # --- MODIFIED Logic for conditional display in Tab 3 ---
     if st.session_state.campaign_copy:
         st.subheader("✏️ Review & Edit Your Campaign Copy")
         st.text_area("Headline:", value=st.session_state.get('editable_headline', st.session_state.campaign_copy.get('headline', '')), height=100, key="editable_headline", help="Edit the AI-suggested headline here.")
@@ -429,12 +479,20 @@ Hashtags:
         with col_pdf_dl:
             try:
                 edited_campaign_details_for_pdf = {"headline": st.session_state.editable_headline, "body": st.session_state.editable_body, "cta": st.session_state.editable_cta, "hashtags": st.session_state.editable_hashtags}
-                pdf_bytes = generate_campaign_pdf(st.session_state.product_info, st.session_state.market_data, edited_campaign_details_for_pdf, st.session_state.pil_image, sales_insights_df=st.session_state.top_sales_products, total_sales_revenue=st.session_state.total_sales_revenue)
+                pdf_bytes = generate_campaign_pdf(
+                    st.session_state.product_info,
+                    st.session_state.market_data,
+                    edited_campaign_details_for_pdf,
+                    st.session_state.pil_image,
+                    sales_insights_df=st.session_state.top_sales_products,
+                    total_sales_revenue=st.session_state.total_sales_revenue
+                )
                 current_date_str = datetime.now().strftime("%Y%m%d"); product_name_for_file = st.session_state.product_info.get('product', 'campaign').lower().replace(' ', '_'); pdf_file_name = f"{product_name_for_file}_campaign_{current_date_str}.pdf"
                 b64_pdf = base64.b64encode(pdf_bytes).decode(); pdf_download_link = f'<a href="data:application/octet-stream;base64,{b64_pdf}" download="{pdf_file_name}">Download Report (.pdf)</a>'; st.markdown(pdf_download_link, unsafe_allow_html=True)
             except Exception as e: st.error(f"Error generating PDF download: {e}")
-    else: # Refined guidance if campaign_copy is None
-        st.markdown("---") # Add a separator
+    # --- MODIFIED Logic for conditional display in Tab 3 ---
+    else:
+        st.markdown("---") 
         if not st.session_state.product_info and not st.session_state.df:
             st.info("ℹ️ Please upload a product image (via the sidebar) to identify a product and generate campaign suggestions. Optionally, upload a sales data file for additional insights.")
         elif not st.session_state.product_info and st.session_state.df is not None:
@@ -449,3 +507,4 @@ Hashtags:
 # --- 7. Footer ---
 st.markdown("---")
 st.caption(f"Developed in Akure, Ondo State, Nigeria | AgroBrand Fusion AI © {datetime.now().year}")
+
