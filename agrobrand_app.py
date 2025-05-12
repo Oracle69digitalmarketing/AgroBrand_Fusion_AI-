@@ -1,7 +1,7 @@
 # --------------------------------------------------------------------------
-# AgroBrand Fusion AI - Phase 2: Market Fallback Transparency
+# AgroBrand Fusion AI - Phase 2: UI/UX Improvement (Tabs & Reset)
 # Focus: AI Assistant for Agribusiness
-# Enhancements: Clearer market source in price lookup
+# Enhancements: Tabs for main content, Reset button, Session State usage
 # Origin Context: Akure, Ondo State, Nigeria
 # Date: May 12, 2025
 # --------------------------------------------------------------------------
@@ -19,37 +19,27 @@ import os
 import json
 
 # --- PDF Generation ---
-from fpdf import FPDF # Requires: pip install fpdf
+from fpdf import FPDF
 
 # --- Google Cloud Vision AI Integration ---
 from google.cloud import vision
 from google.oauth2 import service_account
 
-# --- Credentials Setup Reminder ---
-# For Local Testing: Set Environment Variable 'GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/keyfile.json'
-# For Deployment (Streamlit Cloud): Set Secret 'google_cloud_credentials_json' = content of keyfile.json
-
-# --- Product Name Synonym Map (Vision AI output -> World Bank CSV name) ---
-# !!! This is a starting point - customize based on your Vision AI results and WB CSV product names !!!
+# --- Credentials Setup Reminder & Product Map (Keep as before) ---
+# ... (PRODUCT_NAME_SYNONYM_MAP definition) ...
 PRODUCT_NAME_SYNONYM_MAP = {
-    "bell pepper": "Pepper, Bell",
-    "tomato": "Tomatoes",
-    "tomatoes": "Tomatoes",
-    "catfish": "Fish, Catfish (fresh)",
-    "yam tuber": "Yam",
-    "yam": "Yam",
-    "orange": "Oranges, Sweet",
-    "maize": "Maize (white)",
-    "corn": "Maize (white)",
-    "onion": "Onions",
-    "fruit": None,  # Too generic
-    "vegetable": None, # Too generic
+    "bell pepper": "Pepper, Bell", "tomato": "Tomatoes", "tomatoes": "Tomatoes",
+    "catfish": "Fish, Catfish (fresh)", "yam tuber": "Yam", "yam": "Yam",
+    "orange": "Oranges, Sweet", "maize": "Maize (white)", "corn": "Maize (white)",
+    "onion": "Onions", "fruit": None, "vegetable": None,
     "plantain": "Plantain (ripe / unripe)",
     "beans": "Beans (brown, dry / white, dry / green)",
     "rice": "Rice (local sold loose / imported)"
 }
 
-# --- Real Image Recognition using Google Cloud Vision API ---
+# --- Helper Functions (identify_product_via_web, load_world_bank_data, fetch_market_price,
+#                     generate_campaign_content, generate_campaign_pdf - keep as defined previously) ---
+
 def identify_product_via_web(image_bytes):
     # (Function definition as previously provided - handles credentials, API call, parsing)
     credentials = None; client = None
@@ -80,7 +70,6 @@ def identify_product_via_web(image_bytes):
     else: st.warning("Could not select a primary product label from Vision AI results.")
     return product_info
 
-# --- World Bank Data Functions ---
 @st.cache_data
 def load_world_bank_data(file_path="WB_Nigeria_Food_Prices.csv"):
     # (Function definition as previously provided - loads and preprocesses CSV)
@@ -108,7 +97,7 @@ def load_world_bank_data(file_path="WB_Nigeria_Food_Prices.csv"):
     except Exception as e: st.error(f"Error loading/processing WB data: {e}"); return None
 
 def fetch_market_price(product_name_from_vision):
-    # (Function definition with IMPROVED MARKET FALLBACK TRANSPARENCY, as provided in the last step)
+    # (Function definition with IMPROVED MARKET FALLBACK TRANSPARENCY, as provided previously)
     st.info(f"Looking up '{product_name_from_vision}' (from Vision AI) in World Bank data...")
     df_world_bank = load_world_bank_data()
     if df_world_bank is None or df_world_bank.empty: st.warning("WB price data unavailable."); return {"price": "N/A", "unit": "", "location": "WB Data Unavailable", "date": "N/A", "trend": ""}
@@ -135,7 +124,7 @@ def fetch_market_price(product_name_from_vision):
             contains_filter_original = df_world_bank['Product_Name'].str.contains(search_term_for_wb, case=False, na=False)
             product_df = df_world_bank[contains_filter_original]
         if not product_df.empty and match_type_info: st.info(f"Product search: Used {match_type_info}.")
-        elif not product_df.empty and not match_type_info: st.info("Product search: Defaulted to a match.") # Fallback if match_type_info wasn't set
+        elif not product_df.empty and not match_type_info: st.info("Product search: Defaulted to a match.")
         else: st.warning(f"No price data for '{product_name_from_vision}' in WB dataset."); return {"price": "N/A", "unit": "", "location": "Product Not Found in WB Data", "date": "N/A", "trend": ""}
 
         latest_date = product_df['Date'].max(); latest_date_str = latest_date.strftime('%Y-%m-%d')
@@ -159,7 +148,6 @@ def fetch_market_price(product_name_from_vision):
         else: st.warning(f"No market price for '{product_name_from_vision}' on {latest_date_str}."); return {"price": "N/A", "unit": "", "location": "Market Not Found for Date", "date": latest_date_str, "trend": ""}
     except Exception as e: st.error(f"Error during price lookup for '{product_name_from_vision}': {e}"); return {"price": "Error", "unit": "", "location": "Lookup Failed", "date": "N/A", "trend": ""}
 
-# --- Helper Function for Content Generation ---
 def generate_campaign_content(product_info, market_data):
     # (Function definition as previously provided)
     headline = "Quality Farm Products Available!" # ... (rest of logic unchanged)
@@ -177,7 +165,6 @@ def generate_campaign_content(product_info, market_data):
     hashtags = " ".join(hashtags_list)
     return {"headline": headline, "body": body, "cta": cta, "hashtags": hashtags}
 
-# --- PDF Generation Function ---
 def generate_campaign_pdf(product_info, market_data, campaign_copy, image=None):
     # (Function definition as previously provided, with updated market_data fields)
     pdf = FPDF(); pdf.add_page(); pdf.set_font("Arial", 'B', 16); pdf.cell(0, 10, "AgroBrand AI Campaign Suggestion", ln=True, align='C'); pdf.ln(5); # ... (rest of PDF generation logic)
@@ -193,6 +180,18 @@ def generate_campaign_pdf(product_info, market_data, campaign_copy, image=None):
     pdf.set_font("Arial", 'B', 11); pdf.write(5, "Hashtags: "); pdf.set_font("Arial", size=11); pdf.multi_cell(0, 5, campaign_copy['hashtags']); pdf.ln(5); # ...
     pdf.set_font("Arial", 'I', 8); pdf.cell(0, 10, "--- Generated by AgroBrand Fusion AI ---", ln=True, align='C'); pdf_output_buffer = io.BytesIO(); pdf.output(pdf_output_buffer); return pdf_output_buffer.getvalue()
 
+# --- Initialize Session State Variables ---
+# This helps manage state across reruns and for the reset button
+if 'df' not in st.session_state: st.session_state.df = None
+if 'pil_image' not in st.session_state: st.session_state.pil_image = None
+if 'image_bytes' not in st.session_state: st.session_state.image_bytes = None
+if 'product_info' not in st.session_state: st.session_state.product_info = None
+if 'market_data' not in st.session_state: st.session_state.market_data = None
+if 'campaign_copy' not in st.session_state: st.session_state.campaign_copy = None
+# Keys for file uploaders to allow reset. Needs to be consistent.
+if 'image_uploader_key' not in st.session_state: st.session_state.image_uploader_key = "image_uploader_0"
+if 'file_uploader_key' not in st.session_state: st.session_state.file_uploader_key = "file_uploader_0"
+
 
 # --- 1. Page Configuration ---
 st.set_page_config(page_title="AgroBrand Fusion AI", layout="wide")
@@ -205,54 +204,170 @@ st.markdown("---")
 
 # --- 3. Sidebar for User Inputs ---
 st.sidebar.header("Upload Your Assets Here")
-uploaded_image = st.sidebar.file_uploader("1. Upload Product Image", type=["png", "jpg", "jpeg"])
-uploaded_file = st.sidebar.file_uploader("2. Upload Sales/Cost Sheet (CSV/Excel)", type=["csv", "xlsx"])
 
-# --- 4. Asset Previews ---
-image_bytes = None; pil_image = None; product_info = None; market_data = None; df = None
-col1, col2 = st.columns(2) # Use st.columns for layout
-with col1:
-    st.subheader("Image Preview")
-    if uploaded_image is not None:
-        try: pil_image = Image.open(uploaded_image); st.image(pil_image, caption=f"Uploaded: {uploaded_image.name}", use_column_width=True); uploaded_image.seek(0); image_bytes = uploaded_image.read()
-        except Exception as e: st.error(f"Error displaying image: {e}")
-    else: st.info("No image uploaded.")
-with col2:
-    st.subheader("Data Preview")
-    if uploaded_file is not None:
+# Use session state keys for uploaders to help with reset
+uploaded_image = st.sidebar.file_uploader(
+    "1. Upload Product Image",
+    type=["png", "jpg", "jpeg"],
+    key=st.session_state.image_uploader_key, # Use session state key
+    help="Upload a clear image of a single product. Good lighting helps AI accuracy."
+)
+uploaded_file = st.sidebar.file_uploader(
+    "2. Upload Sales/Cost Sheet (CSV/Excel)",
+    type=["csv", "xlsx"],
+    key=st.session_state.file_uploader_key, # Use session state key
+    help="For 'Data Highlights', ensure columns 'Product' and 'Revenue' exist."
+)
+
+# ADDED RESET BUTTON
+if st.sidebar.button("🔄 Reset All / Start Over"):
+    # Clear all session state variables we've defined
+    keys_to_clear = ['df', 'pil_image', 'image_bytes', 'product_info', 'market_data', 'campaign_copy']
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+    # Increment uploader keys to force them to reset
+    st.session_state.image_uploader_key = f"image_uploader_{int(st.session_state.image_uploader_key.split('_')[-1]) + 1}"
+    st.session_state.file_uploader_key = f"file_uploader_{int(st.session_state.file_uploader_key.split('_')[-1]) + 1}"
+    st.rerun()
+
+
+# --- Process Uploads and Store in Session State ---
+# Image Upload Processing
+if uploaded_image is not None:
+    if st.session_state.pil_image is None or st.session_state.pil_image.filename != uploaded_image.name : # process if new image
         try:
-            if uploaded_file.name.endswith('.csv'): df = pd.read_csv(uploaded_image) # Corrected to uploaded_file
-            elif uploaded_file.name.endswith(('.xlsx', '.xls')): df = pd.read_excel(uploaded_file)
-            if df is not None: st.success(f"Loaded '{uploaded_file.name}'. Preview:"); st.dataframe(df.head())
-            else: st.warning("Could not process file.")
-        except Exception as e: st.error(f"Error reading data file: {e}"); df = None
-    else: st.info("No data file uploaded.")
-st.markdown("---")
+            st.session_state.pil_image = Image.open(uploaded_image)
+            # For image_bytes, we need to read from the uploaded_file object as it's a stream
+            # This should ideally be done once per upload, store bytes in session_state
+            st.session_state.image_bytes = uploaded_image.getvalue() # Get bytes for API
+        except Exception as e:
+            st.error(f"Error processing uploaded image: {e}")
+            st.session_state.pil_image = None
+            st.session_state.image_bytes = None
+# Data File Upload Processing
+if uploaded_file is not None:
+    if st.session_state.df is None: # Process if no df in session or if you want to re-process on new upload
+        try:
+            if uploaded_file.name.endswith('.csv'):
+                st.session_state.df = pd.read_csv(uploaded_file)
+            elif uploaded_file.name.endswith(('.xlsx', '.xls')):
+                st.session_state.df = pd.read_excel(uploaded_file)
+        except Exception as e:
+            st.error(f"Error reading data file: {e}")
+            st.session_state.df = None
 
-# --- 5. Analysis Results Section ---
-st.subheader("🤖 AI Analysis & Insights")
-if image_bytes:
-    product_info = identify_product_via_web(image_bytes)
-    if product_info and product_info.get('product'):
-        market_data = fetch_market_price(product_info['product'])
 
-col_img_analysis, col_mkt_analysis, col_data_analysis = st.columns(3)
-with col_img_analysis:
-    st.write("**Image Analysis:**")
-    if product_info: st.markdown(f"- **Product:** {product_info.get('product', 'N/A')} ({product_info.get('confidence', 0)*100:.1f}%)"); st.markdown(f"- **Condition:** {product_info.get('condition', 'N/A')}"); st.markdown(f"- **Setting:** {product_info.get('setting', 'N/A')}")
-    else: st.info("Upload image for AI analysis.")
-with col_mkt_analysis:
-    st.write("**Market Insights (WB Data):**")
-    if market_data:
-        st.markdown(f"- **Price ({market_data.get('location', 'N/A')}):** {market_data.get('price', 'N/A')}")
-        st.markdown(f"- **Unit:** {market_data.get('unit', 'N/A')}")
-        st.markdown(f"- **Data Date:** {market_data.get('date', 'N/A')}")
-        st.markdown(f"- **Source/Trend:** {market_data.get('trend', 'N/A')}")
-    else: st.info("Requires image analysis & product match in WB data.")
-with col_data_analysis:
-    st.write("**Data Highlights:**")
-    if df is not None:
-        required_cols = ['Product', 'Revenue']
-        if all(col in df.columns for col in required_cols):
+# --- Run Analysis if Inputs are Ready (and not already run for current inputs) ---
+# Store results in session_state
+if st.session_state.image_bytes and not st.session_state.product_info: # Only run if image bytes exist and no product_info yet
+    st.session_state.product_info = identify_product_via_web(st.session_state.image_bytes)
+
+if st.session_state.product_info and st.session_state.product_info.get('product') and not st.session_state.market_data:
+    st.session_state.market_data = fetch_market_price(st.session_state.product_info['product'])
+
+if st.session_state.product_info and st.session_state.market_data and \
+   st.session_state.market_data.get('price') not in ['N/A', 'Error'] and not st.session_state.campaign_copy:
+    st.session_state.campaign_copy = generate_campaign_content(st.session_state.product_info, st.session_state.market_data)
+
+
+# --- Main Content Area with TABS ---
+tab1, tab2, tab3 = st.tabs(["📤 Uploads & Previews", "📊 AI Analysis & Insights", "📝 Generated Content & Export"])
+
+with tab1:
+    st.header("📂 Asset Previews")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("🖼️ Image Preview")
+        if st.session_state.pil_image:
+            st.image(st.session_state.pil_image, caption=f"Uploaded: {st.session_state.pil_image.filename if hasattr(st.session_state.pil_image, 'filename') else 'Image'}", use_column_width=True)
+        else:
+            st.info("No image uploaded or processed yet. Please use the sidebar.")
+    with col2:
+        st.subheader("📄 Data Preview")
+        if st.session_state.df is not None:
+            st.success(f"Data loaded. Preview:")
+            st.dataframe(st.session_state.df.head())
+        else:
+            st.info("No data file uploaded or processed yet. Please use the sidebar.")
+    st.markdown("---")
+
+with tab2:
+    st.header("🤖 AI Analysis & Insights")
+    col_img_analysis, col_mkt_analysis, col_data_analysis = st.columns(3)
+    with col_img_analysis:
+        st.subheader("👁️ Image Analysis")
+        if st.session_state.product_info:
+            st.markdown(f"- **Product:** {st.session_state.product_info.get('product', 'N/A')} (Confidence: {st.session_state.product_info.get('confidence', 0)*100:.1f}%)")
+            st.markdown(f"- **Condition:** {st.session_state.product_info.get('condition', 'N/A')}")
+            st.markdown(f"- **Setting:** {st.session_state.product_info.get('setting', 'N/A')}")
+        else:
+            st.info("Upload an image for AI analysis results to appear here.")
+    with col_mkt_analysis:
+        st.subheader("📈 Market Insights (WB Data)")
+        if st.session_state.market_data:
+            st.markdown(f"- **Price ({st.session_state.market_data.get('location', 'N/A')}):** {st.session_state.market_data.get('price', 'N/A')}")
+            st.markdown(f"- **Unit:** {st.session_state.market_data.get('unit', 'N/A')}")
+            st.markdown(f"- **🗓️ Data Date:** {st.session_state.market_data.get('date', 'N/A')}")
+            st.markdown(f"- **Source/Trend:** {st.session_state.market_data.get('trend', 'N/A')}")
+        else:
+            st.info("Requires successful image analysis & product match in WB data for insights.")
+    with col_data_analysis:
+        st.subheader("💹 Data Highlights")
+        if st.session_state.df is not None:
+            required_cols = ['Product', 'Revenue']
+            if all(col in st.session_state.df.columns for col in required_cols):
+                try:
+                    temp_df = st.session_state.df.copy() # Work on a copy
+                    temp_df['Revenue_Clean'] = temp_df['Revenue'].astype(str).str.replace('[₦,]', '', regex=True)
+                    temp_df['Revenue_Clean'] = pd.to_numeric(temp_df['Revenue_Clean'], errors='coerce')
+                    if temp_df['Revenue_Clean'].isnull().any(): st.warning("Some 'Revenue' values non-numeric.")
+                    top_products = temp_df.sort_values(by="Revenue_Clean", ascending=False).head(3)
+                    st.write("Top Products by Revenue:")
+                    st.dataframe(top_products[['Product', 'Revenue']])
+                except Exception as e: st.error(f"Error analyzing data: {e}")
+            else: st.warning("For Data Highlights, CSV/Excel needs 'Product' & 'Revenue' columns.")
+        else:
+            st.info("Upload a data file for highlights.")
+    st.markdown("---")
+
+with tab3:
+    st.header("💡 Generated Campaign Content & Export")
+    if st.session_state.campaign_copy:
+        st.subheader("🗣️ Suggested Campaign Copy")
+        st.write("**Headline:**"); st.markdown(f"> {st.session_state.campaign_copy['headline']}")
+        st.write("**Body Text:**"); st.markdown(f"> {st.session_state.campaign_copy['body']}")
+        st.write("**Call to Action (CTA):**"); st.markdown(f"> {st.session_state.campaign_copy['cta']}")
+        st.write("**Hashtags:**"); st.text(st.session_state.campaign_copy['hashtags'])
+        st.markdown("---")
+        st.subheader("⬇️ Download Assets")
+        col_txt_dl, col_pdf_dl = st.columns(2)
+        with col_txt_dl:
             try:
-                df['Revenue_Clean'] = df['Revenue'].astype(str).str.replace('[₦,]', '', regex=True); df['Reve
+                current_date_str = datetime.now().strftime("%Y%m%d")
+                product_name_for_file = st.session_state.product_info.get('product', 'campaign').lower().replace(' ', '_')
+                txt_file_name = f"{product_name_for_file}_campaign_{current_date_str}.txt"
+                text_file_content = f"""--- AgroBrand AI Campaign Suggestions ---\nGenerated on: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} WAT\n\nProduct: {st.session_state.product_info.get('product', 'N/A')}\n\nHeadline:\n{st.session_state.campaign_copy['headline']}\n\nBody Text:\n{st.session_state.campaign_copy['body']}\n\nCall to Action (CTA):\n{st.session_state.campaign_copy['cta']}\n\nHashtags:\n{st.session_state.campaign_copy['hashtags']}\n\n--- Generated by AgroBrand Fusion AI ---"""
+                st.download_button(label="Download Copy (.txt)", data=text_file_content.encode('utf-8'), file_name=txt_file_name, mime='text/plain')
+            except Exception as e: st.error(f"Error preparing TXT download: {e}")
+        with col_pdf_dl:
+            try:
+                pdf_bytes = generate_campaign_pdf(st.session_state.product_info, st.session_state.market_data, st.session_state.campaign_copy, st.session_state.pil_image)
+                current_date_str = datetime.now().strftime("%Y%m%d")
+                product_name_for_file = st.session_state.product_info.get('product', 'campaign').lower().replace(' ', '_')
+                pdf_file_name = f"{product_name_for_file}_campaign_{current_date_str}.pdf"
+                b64_pdf = base64.b64encode(pdf_bytes).decode()
+                pdf_download_link = f'<a href="data:application/octet-stream;base64,{b64_pdf}" download="{pdf_file_name}">Download Report (.pdf)</a>'
+                st.markdown(pdf_download_link, unsafe_allow_html=True)
+            except Exception as e: st.error(f"Error generating PDF download: {e}")
+    elif st.session_state.product_info and (not st.session_state.market_data or st.session_state.market_data.get('price') == 'N/A' or st.session_state.market_data.get('price') == 'Error'):
+        st.warning(f"Successfully identified '{st.session_state.product_info.get('product')}' but could not find/retrieve its price in/from the World Bank dataset. Campaign generation and downloads might be limited or unavailable.")
+    elif st.session_state.df is not None: # Check if df is loaded (from session state)
+        st.info("Upload a product image for full campaign generation and download options.")
+    else:
+        st.info("Upload a product image and/or data file to generate campaign suggestions and enable downloads.")
+
+# --- 7. Footer ---
+st.markdown("---")
+st.caption("Developed in Akure | Providing Nationwide Insights | © 2025")
+
