@@ -11,9 +11,11 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 import io
-import time # For simulated delays in mock functions
+import time
+from datetime import datetime # To add date to download file
 
 # --- Mocked Analysis Functions ---
+# (Keep the identify_product_via_web and fetch_market_price functions as defined before)
 def identify_product_via_web(image_bytes):
     st.info("Simulating image recognition...")
     time.sleep(1)
@@ -29,7 +31,9 @@ def fetch_market_price(product_name):
     }
     return price_trends.get(product_name, {"price_range": "N/A", "location": "N/A", "trend": "No specific data available"})
 
+
 # --- Helper Function for Content Generation ---
+# (Keep the generate_campaign_content function as defined before)
 def generate_campaign_content(product_info, market_data):
     headline = "Quality Farm Products Available!"
     body = "Get the best farm-fresh products today."
@@ -66,29 +70,26 @@ uploaded_image = st.sidebar.file_uploader("1. Upload Product Image", type=["png"
 uploaded_file = st.sidebar.file_uploader("2. Upload Sales/Cost Sheet", type=["csv", "xlsx"])
 
 # --- 4. Asset Previews ---
-# Initialize shared variables
+# (Keep this section as before, using columns for image and data preview)
 image_bytes = None
 product_info = None
 market_data = None
 df = None
-
-col1, col2 = st.columns(2) # Create two columns for previews
-
+col1, col2 = st.columns(2)
 with col1:
     st.subheader("Image Preview")
+    # ... (image display logic) ...
     if uploaded_image is not None:
         try:
             image = Image.open(uploaded_image)
             st.image(image, caption=f"Uploaded: {uploaded_image.name}", use_column_width=True)
             uploaded_image.seek(0)
             image_bytes = uploaded_image.read()
-        except Exception as e:
-            st.error(f"Error displaying image: {e}")
-    else:
-        st.info("No image uploaded.")
-
+        except Exception as e: st.error(f"Error displaying image: {e}")
+    else: st.info("No image uploaded.")
 with col2:
     st.subheader("Data Preview")
+    # ... (data reading and display logic) ...
     if uploaded_file is not None:
         try:
             if uploaded_file.name.endswith('.csv'): df = pd.read_csv(uploaded_file)
@@ -97,81 +98,99 @@ with col2:
                 st.success(f"Loaded '{uploaded_file.name}'. Preview:")
                 st.dataframe(df.head())
             else: st.warning("Could not process file.")
-        except Exception as e:
-            st.error(f"Error reading data file: {e}"); df = None
-    else:
-        st.info("No data file uploaded.")
+        except Exception as e: st.error(f"Error reading data file: {e}"); df = None
+    else: st.info("No data file uploaded.")
 st.markdown("---")
 
-
 # --- 5. Analysis Results Section ---
+# (Keep this section as before, displaying analysis results in columns)
 st.subheader("🤖 AI Analysis & Insights")
-
-# Run analyses only if inputs are available
 if image_bytes:
     product_info = identify_product_via_web(image_bytes)
     if product_info and product_info.get('product'):
         market_data = fetch_market_price(product_info['product'])
 
-# Display Analysis Results
 col_img_analysis, col_mkt_analysis, col_data_analysis = st.columns(3)
-
+# ... (logic to display product_info, market_data, and df analysis in columns) ...
 with col_img_analysis:
-    st.write("**Image Analysis:**")
-    if product_info:
-        st.markdown(f"- **Product:** {product_info.get('product', 'N/A')} ({product_info.get('confidence', 0)*100:.1f}%)")
-        st.markdown(f"- **Condition:** {product_info.get('condition', 'N/A')}")
-        st.markdown(f"- **Setting:** {product_info.get('setting', 'N/A')}")
+    st.write("**Image Analysis:**"); # ... (display logic) ...
+    if product_info: st.markdown(f"- **Product:** {product_info.get('product', 'N/A')} ({product_info.get('confidence', 0)*100:.1f}%)"); st.markdown(f"- **Condition:** {product_info.get('condition', 'N/A')}"); st.markdown(f"- **Setting:** {product_info.get('setting', 'N/A')}")
     else: st.info("Upload image.")
-
 with col_mkt_analysis:
-    st.write("**Market Insights:**")
-    if market_data:
-        st.markdown(f"- **Price ({market_data.get('location', 'N/A')}):** {market_data.get('price_range', 'N/A')}")
-        st.markdown(f"- **Trend:** {market_data.get('trend', 'N/A')}")
+    st.write("**Market Insights:**"); # ... (display logic) ...
+    if market_data: st.markdown(f"- **Price ({market_data.get('location', 'N/A')}):** {market_data.get('price_range', 'N/A')}"); st.markdown(f"- **Trend:** {market_data.get('trend', 'N/A')}")
     else: st.info("Requires image analysis.")
-
 with col_data_analysis:
-    st.write("**Data Highlights:**")
+    st.write("**Data Highlights:**"); # ... (display logic) ...
     if df is not None:
-        required_cols = ['Product', 'Revenue']
+        required_cols = ['Product', 'Revenue']; # ... (analysis logic) ...
         if all(col in df.columns for col in required_cols):
             try:
-                df['Revenue_Clean'] = df['Revenue'].astype(str).str.replace('[₦,]', '', regex=True)
-                df['Revenue_Clean'] = pd.to_numeric(df['Revenue_Clean'], errors='coerce')
+                df['Revenue_Clean'] = df['Revenue'].astype(str).str.replace('[₦,]', '', regex=True); df['Revenue_Clean'] = pd.to_numeric(df['Revenue_Clean'], errors='coerce')
                 if df['Revenue_Clean'].isnull().any(): st.warning("Some 'Revenue' values non-numeric.")
-                top_products = df.sort_values(by="Revenue_Clean", ascending=False).head(3) # Show top 3
-                st.write("Top Products by Revenue:")
-                st.dataframe(top_products[['Product', 'Revenue']])
+                top_products = df.sort_values(by="Revenue_Clean", ascending=False).head(3); st.write("Top Products by Revenue:"); st.dataframe(top_products[['Product', 'Revenue']])
             except Exception as e: st.error(f"Error: {e}")
         else: st.warning("Needs 'Product' & 'Revenue' cols.")
     else: st.info("Upload data file.")
 st.markdown("---")
 
 
-# --- 6. Generated Campaign Content Section --- ADDED SECTION ---
+# --- 6. Generated Campaign Content Section ---
 st.subheader("💡 Generated Campaign Content")
 
-# Generate content only if we have product info from image analysis
+campaign_copy = None # Initialize campaign_copy
 if product_info and market_data:
-    campaign_copy = generate_campaign_content(product_info, market_data) # Call helper function
+    campaign_copy = generate_campaign_content(product_info, market_data)
 
     st.write("**Suggested Headline:**")
-    st.markdown(f"> {campaign_copy['headline']}") # Use blockquote markdown
-
+    st.markdown(f"> {campaign_copy['headline']}")
     st.write("**Suggested Body Text:**")
     st.markdown(f"> {campaign_copy['body']}")
-
     st.write("**Suggested Call to Action (CTA):**")
     st.markdown(f"> {campaign_copy['cta']}")
-
     st.write("**Suggested Hashtags:**")
-    st.text(campaign_copy['hashtags']) # Use st.text for plain text display of hashtags
+    st.text(campaign_copy['hashtags'])
+    st.markdown("---") # Separator before download button
 
-# Add alternative message if analysis results aren't available
+    # --- ADDED DOWNLOAD BUTTON LOGIC ---
+    try:
+        # 1. Format the data for the text file
+        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # Get current date and time
+        product_name_for_file = product_info.get('product', 'campaign').lower().replace(' ', '_')
+        file_name = f"{product_name_for_file}_campaign_copy_{current_date.split()[0]}.txt" # e.g., catfish_campaign_copy_2025-05-12.txt
+
+        text_file_content = f"""--- AgroBrand AI Campaign Suggestions ---
+Generated on: {current_date} WAT
+
+Product: {product_info.get('product', 'N/A')}
+
+Headline:
+{campaign_copy['headline']}
+
+Body Text:
+{campaign_copy['body']}
+
+Call to Action (CTA):
+{campaign_copy['cta']}
+
+Hashtags:
+{campaign_copy['hashtags']}
+
+--- Generated by AgroBrand Fusion AI ---
+"""
+        # 2. Create the download button
+        st.download_button(
+            label="Download Campaign Copy (.txt)",
+            data=text_file_content.encode('utf-8'), # Encode string to bytes
+            file_name=file_name,
+            mime='text/plain' # Set the MIME type for text files
+        )
+    except Exception as e:
+        st.error(f"Error preparing download link: {e}")
+    # --- END OF DOWNLOAD BUTTON LOGIC ---
+
 elif df is not None and 'Product' in df.columns:
-    # Basic message if only data file is uploaded
-    st.info("Upload a product image to generate more specific campaign content. Based on your data, focus marketing efforts on top products.")
+    st.info("Upload a product image to generate more specific campaign content and enable download.")
 else:
     st.info("Upload a product image and/or data file to generate campaign suggestions.")
 
